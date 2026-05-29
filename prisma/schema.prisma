@@ -1,0 +1,100 @@
+// ============================
+// Prisma Schema for Inventory & Workshop Management System
+// ============================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  
+}
+
+// ============================
+// USERS MODEL
+// ============================
+model User {
+  id          Int       @id @default(autoincrement())
+  name        String
+  email       String    @unique
+  password    String
+  role        Role      @default(staff)
+  created_at  DateTime  @default(now())
+
+  // Relations
+  transactions   Transaction[]
+  borrowRequests BorrowRequest[]
+}
+
+// ============================
+// ITEMS MODEL
+// ============================
+model Item {
+  id           Int       @id @default(autoincrement())
+  name         String
+  category     String?
+  quantity     Int       @default(0)
+  location     String?
+  image_url    String?
+  min_quantity Int       @default(1)
+  created_at   DateTime  @default(now())
+
+  // Relations
+  transactions   Transaction[]
+  borrowRequests BorrowRequest[]
+}
+
+// ============================
+// TRANSACTIONS MODEL
+// ============================
+model Transaction {
+  id        Int       @id @default(autoincrement())
+  item_id   Int
+  user_id   Int
+  type      TransactionType
+  quantity  Int
+  date      DateTime  @default(now())
+
+  // Relations
+  item Item @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+// ============================
+// BORROW REQUESTS MODEL
+// ============================
+model BorrowRequest {
+  id           Int       @id @default(autoincrement())
+  item_id      Int
+  user_id      Int
+  status       RequestStatus @default(pending)
+  request_date DateTime  @default(now())
+  return_date  DateTime?
+
+  // Relations
+  item Item @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+// ============================
+// ENUMS
+// ============================
+enum Role {
+  admin
+  staff
+}
+
+enum TransactionType {
+  borrow
+  return
+  stock_in
+  stock_out
+}
+
+enum RequestStatus {
+  pending
+  approved
+  rejected
+  returned
+}
