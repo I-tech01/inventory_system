@@ -1,8 +1,13 @@
-import express from 'express';
-import cors from 'cors';
+import express from 'express'
+import itemsRouter from './routes/items.js'
 
-const app = express();
+const app = express()
+app.use(express.json())
 
+app.use('/items', itemsRouter)
 
-const PORT = 3000
+app.listen(3000, () => {
+  console.log('Server running on port 3000')
+})
+
 
