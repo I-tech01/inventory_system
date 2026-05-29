@@ -1,100 +1,80 @@
-// ============================
-// Prisma Schema for Inventory & Workshop Management System
-// ============================
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "mysql"
-  
 }
 
-// ============================
-// USERS MODEL
-// ============================
-model User {
-  id          Int       @id @default(autoincrement())
-  name        String
-  email       String    @unique
-  password    String
-  role        Role      @default(staff)
-  created_at  DateTime  @default(now())
-
-  // Relations
-  transactions   Transaction[]
-  borrowRequests BorrowRequest[]
-}
-
-// ============================
-// ITEMS MODEL
-// ============================
-model Item {
-  id           Int       @id @default(autoincrement())
-  name         String
-  category     String?
-  quantity     Int       @default(0)
-  location     String?
-  image_url    String?
-  min_quantity Int       @default(1)
-  created_at   DateTime  @default(now())
-
-  // Relations
-  transactions   Transaction[]
-  borrowRequests BorrowRequest[]
-}
-
-// ============================
-// TRANSACTIONS MODEL
-// ============================
-model Transaction {
-  id        Int       @id @default(autoincrement())
-  item_id   Int
-  user_id   Int
-  type      TransactionType
-  quantity  Int
-  date      DateTime  @default(now())
-
-  // Relations
-  item Item @relation(fields: [item_id], references: [id], onDelete: Cascade)
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
-}
-
-// ============================
-// BORROW REQUESTS MODEL
-// ============================
-model BorrowRequest {
-  id           Int       @id @default(autoincrement())
+model borrow_requests {
+  id           Int                     @id @default(autoincrement())
   item_id      Int
   user_id      Int
-  status       RequestStatus @default(pending)
-  request_date DateTime  @default(now())
-  return_date  DateTime?
+  status       borrow_requests_status? @default(pending)
+  request_date DateTime?               @default(now()) @db.Timestamp(0)
+  return_date  DateTime?               @db.Timestamp(0)
+  items        items                   @relation(fields: [item_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "borrow_requests_ibfk_1")
+  users        users                   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "borrow_requests_ibfk_2")
 
-  // Relations
-  item Item @relation(fields: [item_id], references: [id], onDelete: Cascade)
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  @@index([item_id], map: "idx_borrow_item")
+  @@index([user_id], map: "idx_borrow_user")
 }
 
-// ============================
-// ENUMS
-// ============================
-enum Role {
-  admin
-  staff
+model items {
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar(150)
+  category        String?           @db.VarChar(100)
+  quantity        Int?              @default(0)
+  location        String?           @db.VarChar(150)
+  image_url       String?           @db.VarChar(255)
+  min_quantity    Int?              @default(1)
+  created_at      DateTime?         @default(now()) @db.Timestamp(0)
+  borrow_requests borrow_requests[]
+  transactions    transactions[]
+
+  @@index([category], map: "idx_items_category")
 }
 
-enum TransactionType {
+model transactions {
+  id       Int               @id @default(autoincrement())
+  item_id  Int
+  user_id  Int
+  type     transactions_type
+  quantity Int
+  date     DateTime?         @default(now()) @db.Timestamp(0)
+  items    items             @relation(fields: [item_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "transactions_ibfk_1")
+  users    users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "transactions_ibfk_2")
+
+  @@index([item_id], map: "idx_transactions_item")
+  @@index([user_id], map: "user_id")
+}
+
+model users {
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar(100)
+  email           String            @unique(map: "email") @db.VarChar(150)
+  password        String            @db.VarChar(255)
+  role            users_role?       @default(staff)
+  created_at      DateTime?         @default(now()) @db.Timestamp(0)
+  borrow_requests borrow_requests[]
+  transactions    transactions[]
+}
+
+enum borrow_requests_status {
+  pending
+  approved
+  rejected
+  returned
+}
+
+enum transactions_type {
   borrow
   return
   stock_in
   stock_out
 }
 
-enum RequestStatus {
-  pending
-  approved
-  rejected
-  returned
+enum users_role {
+  admin
+  staff
 }
